@@ -57,6 +57,7 @@ foreach ($posts as $post) {
 $totalStmt = $conn->prepare("SELECT COUNT(*) FROM posts");
 $totalStmt->execute();
 $totalPosts = $totalStmt->fetchColumn();
+$totalPages = ceil($totalPosts / $limit);
 ?>
 
 <div>
