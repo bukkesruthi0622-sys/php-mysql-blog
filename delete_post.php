@@ -1,11 +1,17 @@
 <?php
-include "db.php";
+session_start();
+require 'db.php';
 
-if (isset($_GET['id'])) {
-    $id = (int) $_GET['id'];
-    mysqli_query($conn, "DELETE FROM posts WHERE id = $id");
+if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'admin') {
+    header("Location: dashboard.php");
+    exit();
 }
 
-header("Location: index.php");
-exit;
+$id = (int)$_GET['id'];
+
+$stmt = $conn->prepare("DELETE FROM posts WHERE id = :id");
+$stmt->execute([':id' => $id]);
+
+header("Location: dashboard.php");
+exit();
 ?>

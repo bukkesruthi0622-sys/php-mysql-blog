@@ -1,30 +1,51 @@
 <?php
-include "db.php";
+require 'db.php';
 
-if (isset($_POST['register'])) {
-    $username = mysqli_real_escape_string($conn, $_POST['username']);
-    $password = mysqli_real_escape_string($conn, $_POST['password']);
+$message = "";
 
-    // Hash password
-    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    $query = "INSERT INTO users (username, password) 
-              VALUES ('$username', '$hashed_password')";
+    $username = trim($_POST['username']);
+    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+    $role = $_POST['role'];
 
-    mysqli_query($conn, $query);
+    $stmt = $conn->prepare("INSERT INTO users (username, password, role) 
+                            VALUES (:username, :password, :role)");
 
-    echo "Registration successful. <a href='login.php'>Login</a>";
+    $stmt->execute([
+        ':username' => $username,
+        ':password' => $password,
+        ':role' => $role
+    ]);
+
+    $message = "Registration successful!";
 }
 ?>
 
-<h2>User Registration</h2>
+<!DOCTYPE html>
+<html>
+<head>
+<title>Register</title>
+</head>
+<body>
 
-<form method="post">
-    Username:<br>
-    <input type="text" name="username" required><br><br>
+<h2>Register</h2>
 
-    Password:<br>
-    <input type="password" name="password" required><br><br>
+<?php if ($message) echo "<p>$message</p>"; ?>
 
-    <button type="submit" name="register">Register</button>
+<form method="POST">
+<input type="text" name="username" placeholder="Username" required><br>
+<input type="password" name="password" placeholder="Password" required><br>
+
+<select name="role">
+<option value="editor">Editor</option>
+<option value="admin">Admin</option>
+</select><br><br>
+
+<button type="submit">Register</button>
 </form>
+
+<a href="login.php">Back to Login</a>
+
+</body>
+</html>

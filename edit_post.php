@@ -1,30 +1,36 @@
 <?php
-include "db.php";
+session_start();
+require 'db.php';
 
-$id = $_GET['id'];
+if (!isset($_SESSION['username'])) {
+    header("Location: login.php");
+    exit();
+}
 
-$result = mysqli_query($conn, "SELECT * FROM posts WHERE id = $id");
-$post = mysqli_fetch_assoc($result);
+$id = (int)$_GET['id'];
 
-if (isset($_POST['update'])) {
-    $title = $_POST['title'];
-    $content = $_POST['content'];
+$stmt = $conn->prepare("SELECT * FROM posts WHERE id = :id");
+$stmt->execute([':id' => $id]);
+$post = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    $update = "UPDATE posts SET title='$title', content='$content' WHERE id=$id";
-    mysqli_query($conn, $update);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    header("Location: index.php");
+    $update = $conn->prepare("UPDATE posts SET title=:title, content=:content WHERE id=:id");
+    $update->execute([
+        ':title' => $_POST['title'],
+        ':content' => $_POST['content'],
+        ':id' => $id
+    ]);
+
+    header("Location: dashboard.php");
+    exit();
 }
 ?>
 
 <h2>Edit Post</h2>
 
-<form method="post">
-    Title:<br>
-    <input type="text" name="title" value="<?php echo $post['title']; ?>" required><br><br>
-
-    Content:<br>
-    <textarea name="content" required><?php echo $post['content']; ?></textarea><br><br>
-
-    <button type="submit" name="update">Update Post</button>
+<form method="POST">
+<input type="text" name="title" value="<?php echo htmlspecialchars($post['title']); ?>"><br>
+<textarea name="content"><?php echo htmlspecialchars($post['content']); ?></textarea><br>
+<button type="submit">Update</button>
 </form>

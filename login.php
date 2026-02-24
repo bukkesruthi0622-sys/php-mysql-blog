@@ -1,34 +1,84 @@
 <?php
 session_start();
-include "db.php";
+require 'db.php';
 
-if (isset($_POST['login'])) {
-    $username = $_POST['username'];
-    $password = $_POST['password'];
+$error = "";
 
-    $query = "SELECT * FROM users WHERE username='$username'";
-    $result = mysqli_query($conn, $query);
-    $user = mysqli_fetch_assoc($result);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    if ($user && password_verify($password, $user['password'])) {
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['username'] = $user['username'];
+    $username = trim($_POST['username']);
+    $password = trim($_POST['password']);
 
-        header("Location: index.php");
+    if (empty($username) || empty($password)) {
+        $error = "All fields are required!";
     } else {
-        echo "Invalid username or password";
+
+        $stmt = $conn->prepare("SELECT * FROM users WHERE username = :username");
+        $stmt->execute([':username' => $username]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($user && password_verify($password, $user['password'])) {
+
+            $_SESSION['username'] = $user['username'];
+            $_SESSION['role'] = $user['role'];
+            $_SESSION['user_id'] = $user['id'];
+
+            header("Location: dashboard.php");
+            exit();
+
+        } else {
+            $error = "Invalid username or password!";
+        }
     }
 }
 ?>
 
-<h2>User Login</h2>
+<!DOCTYPE html>
+<html>
+<head>
+<title>Login</title>
+<style>
+body { font-family: Arial; background:#f4f4f4; }
+.container { width:350px; margin:100px auto; background:white; padding:20px; box-shadow:0 0 10px #ccc; }
+input { width:100%; padding:8px; margin-bottom:10px; }
+button { padding:8px 15px; }
+.error { color:red; }
+.password-container { position:relative; }
+.toggle { position:absolute; right:10px; top:8px; cursor:pointer; }
+</style>
+</head>
+<body>
 
-<form method="post">
-    Username:<br>
-    <input type="text" name="username" required><br><br>
+<div class="container">
+<h2>Login</h2>
 
-    Password:<br>
-    <input type="password" name="password" required><br><br>
+<?php if ($error): ?>
+<p class="error"><?php echo $error; ?></p>
+<?php endif; ?>
 
-    <button type="submit" name="login">Login</button>
+<form method="POST">
+<label>Username</label>
+<input type="text" name="username" required>
+
+<label>Password</label>
+<div class="password-container">
+<input type="password" id="password" name="password" required>
+<span class="toggle" onclick="togglePassword()">👁</span>
+</div>
+
+<button type="submit">Login</button>
 </form>
+
+<br>
+<a href="register.php">Register</a>
+</div>
+
+<script>
+function togglePassword() {
+    var x = document.getElementById("password");
+    x.type = (x.type === "password") ? "text" : "password";
+}
+</script>
+
+</body>
+</html>
